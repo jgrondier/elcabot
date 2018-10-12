@@ -78,6 +78,9 @@ def basic_classifier(words):
 def get_best_recommendation(recommendations):
     best_weighted_location = max(recommendations, key=lambda x: x.get_score())
 
+    if best_weighted_location.get_score() == 0:
+        return None
+
     return best_weighted_location.get_location()
 
 
