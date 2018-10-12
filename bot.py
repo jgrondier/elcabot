@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 LOCATION, BUSINESS_CHOICE, RESULT = range(3)
 
 # It's ugly but it's a 2 hours challenge
+
+
 locations_dict = {
     # user : {lattitude: , longitude: }
 }
@@ -67,6 +69,9 @@ def location(bot, update):
 
 def business_choice(bot, update):
     user = update.message.from_user
+
+    #retrieve user location from locations_dict[user.id]
+
 
     # TODO
 
