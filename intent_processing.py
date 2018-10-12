@@ -10,6 +10,7 @@ def get_basic_dict():
                        'eat',
                        'hungry',
                        'pizzeria',
+                       'pizza',
                        'lunch',
                        'fast-food',
                        'restaurant'],
@@ -75,13 +76,23 @@ def basic_classifier(words):
     return recommendations
 
 
-def get_best_recommendation(recommendations):
+def get_best_recommendations(recommendations):
     best_weighted_location = max(recommendations, key=lambda x: x.get_score())
 
-    if best_weighted_location.get_score() == 0:
+    best_score = best_weighted_location.get_score()
+
+    if best_score == 0:
         return None
 
-    return best_weighted_location.get_location()
+    lead_recommendations = filter(lambda x: x.get_score() == best_score,
+                                  recommendations)
+
+    recommendation_list = list(map(lambda x: x.get_location(),
+                                   lead_recommendations))
+
+    return recommendation_list
+
+    # return best_weighted_location.get_location()
 
 
 def get_sanitized_words(text):
@@ -97,6 +108,6 @@ def get_location_recommendation(text):
     words = get_sanitized_words(text)
 
     recommendations = basic_classifier(words)
-    location = get_best_recommendation(recommendations)
+    locations = get_best_recommendations(recommendations)
 
-    return location
+    return locations
