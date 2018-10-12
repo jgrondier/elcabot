@@ -6,6 +6,8 @@
 
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 import logging
+from intent_processing import get_location_recommendation
+from yelp import search_yelp
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -20,6 +22,10 @@ LOCATION, BUSINESS_CHOICE, RESULT = range(3)
 
 locations_dict = {
     # user : {lattitude: , longitude: }
+}
+
+btypes_dict = {
+
 }
 
 # Define a few command handlers. These usually take the two arguments bot and
@@ -47,20 +53,18 @@ def location(bot, update):
 
     logger.info("Receiving location from {}".format(user.id))
 
-
     user_location = update.message.location
 
     if user_location is None:
-        update.message.reply_text("Uh-oh, it looks like you didn't send me a location :( Let's try again !")
+        update.message.reply_text(
+            "Uh-oh, it looks like you didn't send me a location :( Let's try again !")
         logger.info("Invalid location from {}".format(user.id))
 
         return LOCATION
 
     update.message.reply_text("Great ! What would you like to do ?")
 
-
     logger.info("Received location {} from {}".format(user_location, user.id))
-
 
     locations_dict[user.id] = user_location
 
@@ -70,19 +74,36 @@ def location(bot, update):
 def business_choice(bot, update):
     user = update.message.from_user
 
-    #retrieve user location from locations_dict[user.id]
+    # retrieve user location from locations_dict[user.id]
 
+    btype = get_location_recommendation(update.message.text)
 
-    # TODO
+    btypes_dict[user.id] = btype
 
-    return RESULT
+    update.message.reply_text(
+        "Great, you're looking for a {}. Let's look at what we have near you.".format(btype))
 
+    logger.info(
+        "Received business type intent {} from user {}".format(btype, user.id))
 
-def result(bot, update):
+    user = update.message.from_user
 
-    # TODO
+    loc = locations_dict[user.id]
 
-    pass
+    result = search_yelp(business_type=btypes_dict[user.id], location=loc)
+
+    update.message.reply_text("Ok, so here is what I found: ")
+
+    logger.info(result)
+
+    update.message.reply_venue(
+        latitude=result["location"][0],
+        longitude=result["location"][1],
+        title=result["name"],
+        address=result["display_address"]
+    )
+
+    return ConversationHandler.END
 
 
 def cancel(bot, update):
@@ -112,7 +133,6 @@ def main():
         states={
             LOCATION: [MessageHandler(Filters.text | Filters.location, location)],
             BUSINESS_CHOICE: [MessageHandler(Filters.text, business_choice)],
-            RESULT: [MessageHandler(Filters.text, result)]
         },
 
         fallbacks=[CommandHandler('cancel', cancel)]
