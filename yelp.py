@@ -5,5 +5,7 @@ def search_yelp(business_type, location):
     search_results = yelp_api.search_query(term=business_type, location=str(location['latitude'])+","+str(location['longitude']))
     first_result = search_results['businesses'][0]
     venueLocation = (first_result['coordinates']['latitude'], first_result['coordinates']['longitude'])
-    venueName = first_result['name']
-    return {'location':venueLocation, 'name':venueName}
+    return {'location':venueLocation, 'name':first_result['name'], 'url': first_result['url'], 'display_address': ', '.join(first_result['location']['display_address'])}  
+
+    
+#print(search_yelp("restaurant", {'latitude': 46.522951, 'longitude': 6.564554}))
