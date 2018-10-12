@@ -4,7 +4,7 @@
 """Simple Bot to reply to Telegram messages.
 """
 
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
 import logging
 
 # Enable logging
@@ -13,22 +13,78 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+LOCATION, BUSINESS_CHOICE, RESULT = range(3)
+
+# It's ugly but it's a 2 hours challenge
+locations_dict = {
+    # user : {lattitude: , longitude: }
+}
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
+
+
 def start(bot, update):
     """Send a message when the command /start is issued."""
-    update.message.reply_text('Hi!')
+    update.message.reply_text(
+        'Hi! I am the Elca Challenge Bot.'
+        'I am going to show you some places. '
+        'To start, send me a location.'
+    )
+
+    user = update.message.from_user
+
+    logger.info("Started conversationg with {}".format(user.id))
+
+    return LOCATION
 
 
-def help(bot, update):
-    """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+def location(bot, update):
+
+    user = update.message.from_user
+
+    logger.info("Receiving location from {}".format(user.id))
 
 
-def echo(bot, update):
-    """Echo the user message."""
-    update.message.reply_text(update.message.text)
+    user_location = update.message.location
+
+    if user_location is None:
+        update.message.reply_text("Uh-oh, it looks like you didn't send me a location :( Let's try again !")
+        logger.info("Invalid location from {}".format(user.id))
+
+        return LOCATION
+
+    update.message.reply_text("Great ! What would you like to do ?")
+
+
+    logger.info("Received location {} from {}".format(user_location, user.id))
+
+
+    locations_dict[user.id] = user_location
+
+    return BUSINESS_CHOICE
+
+
+def business_choice(bot, update):
+    user = update.message.from_user
+
+    # TODO
+
+    return RESULT
+
+
+def result(bot, update):
+
+    # TODO
+
+    pass
+
+
+def cancel(bot, update):
+    user = update.message.from_user
+    update.message.reply_text('Oups, I think something really wrong happened.')
+
+    return ConversationHandler.END
 
 
 def error(bot, update, error):
@@ -44,12 +100,22 @@ def main():
     # Get the dispatcher to register handlers
     dp = updater.dispatcher
 
-    # on different commands - answer in Telegram
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help))
+    conv_handler = ConversationHandler(
 
-    # on noncommand i.e message - echo the message on Telegram
-    dp.add_handler(MessageHandler(Filters.text, echo))
+        entry_points=[CommandHandler('start', start)],
+
+        states={
+            LOCATION: [MessageHandler(Filters.text | Filters.location, location)],
+            BUSINESS_CHOICE: [MessageHandler(Filters.text, business_choice)],
+            RESULT: [MessageHandler(Filters.text, result)]
+        },
+
+        fallbacks=[CommandHandler('cancel', cancel)]
+
+    )
+
+    # on different commands - answer in Telegram
+    dp.add_handler(conv_handler)
 
     # log all errors
     dp.add_error_handler(error)
